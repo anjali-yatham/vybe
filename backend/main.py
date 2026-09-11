@@ -2,11 +2,12 @@ import os
 from typing import List
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
+from agents.orchestrator import evaluate_transaction
 from database.init_db import Event, PrimarySaleTransaction, ResaleTransaction, User
 
 # Load environment variables
@@ -88,6 +89,21 @@ class ResaleTransactionResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Pydantic model for transaction evaluation request
+class EvaluateTransactionRequest(BaseModel):
+    transaction_id: str
+    seller_id: str
+    buyer_id: str
+    ticket_id: str
+    price_markup_ratio: float
+    seller_account_age_days: float
+    buyer_account_age_days: float
+    hours_since_ticket_purchase: float
+    seller_tickets_last_hour: int
+    payment_reuse_count: int
+    is_duplicate_ticket_attempt: int
 
 
 @app.get("/users", response_model=List[UserResponse])
@@ -186,3 +202,45 @@ def get_resale_transactions():
             }
             for txn in transactions
         ]
+
+
+@app.post("/evaluate-transaction")
+def evaluate_transaction_endpoint(request: EvaluateTransactionRequest):
+    """
+    Evaluate a transaction through the fraud detection pipeline.
+    
+    Runs the complete pipeline including:
+    - Profiler Agent (trust profile)
+    - Anomaly Detection (IsolationForest)
+    - Investigation Agent (if flagged)
+    - Decision & Explanation Agent (if flagged)
+    
+    Returns a comprehensive evaluation result.
+    """
+    try:
+        # Convert Pydantic model to dictionary for orchestrator
+        transaction_dict = {
+            "transaction_id": request.transaction_id,
+            "seller_id": request.seller_id,
+            "buyer_id": request.buyer_id,
+            "ticket_id": request.ticket_id,
+            "price_markup_ratio": request.price_markup_ratio,
+            "seller_account_age_days": request.seller_account_age_days,
+            "buyer_account_age_days": request.buyer_account_age_days,
+            "hours_since_ticket_purchase": request.hours_since_ticket_purchase,
+            "seller_tickets_last_hour": request.seller_tickets_last_hour,
+            "payment_reuse_count": request.payment_reuse_count,
+            "is_duplicate_ticket_attempt": request.is_duplicate_ticket_attempt,
+        }
+        
+        # Run the fraud detection pipeline
+        result = evaluate_transaction(transaction_dict)
+        
+        return result
+        
+    except Exception as e:
+        # Return a 500 error with clear error message if anything fails
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to evaluate transaction: {str(e)}"
+        )
