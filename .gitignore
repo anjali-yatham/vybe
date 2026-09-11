@@ -1,0 +1,25 @@
+# Environment variables (secrets - never commit)
+backend/.env
+frontend/.env
+.env
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Build outputs
+frontend/dist/
+frontend/build/
