@@ -12,6 +12,11 @@ from agents.investigation_agent import investigate_transaction
 from agents.profiler_agent import get_user_trust_profile
 from database.init_db import ResaleTransaction
 
+# Import blockchain client for on-chain ownership transfer
+import sys
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "blockchain"))
+from blockchain_client import issue_ticket_onchain
+
 # Load environment variables from .env
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 load_dotenv(BACKEND_DIR / ".env")
@@ -91,14 +96,33 @@ def evaluate_transaction(transaction: dict) -> dict:
     # ========== STEP 3: Decision Point ==========
     print("\n[STEP 3] Decision Point...")
     
+    blockchain_tx_hash = None  # Initialize blockchain transaction hash
+    
     if not is_flagged:
         print("  ✓ ALLOWED AUTOMATICALLY")
+        
+        # ========== STEP 3a: Record on Blockchain ==========
+        print("\n[STEP 3a] Recording ownership transfer on blockchain...")
+        try:
+            # Record the ticket ownership transfer on-chain
+            tx_hash = issue_ticket_onchain(
+                ticket_id=transaction["ticket_id"],
+                owner_address=transaction["buyer_id"]
+            )
+            blockchain_tx_hash = tx_hash
+            print(f"  ✓ Blockchain Transaction Hash: {tx_hash}")
+        except Exception as e:
+            print(f"  ✗ Blockchain recording failed: {str(e)}")
+            print("  → Transaction allowed but not recorded on-chain")
+            # Continue execution even if blockchain fails
+        
         return {
             "transaction_id": transaction["transaction_id"],
             "status": "allowed",
             "trust_profile": trust_profile,
             "investigation_findings": None,
             "explanation": None,
+            "blockchain_tx_hash": blockchain_tx_hash,
         }
     
     print("  ⚠ FLAGGED - Proceeding to investigation...")
@@ -132,6 +156,7 @@ def evaluate_transaction(transaction: dict) -> dict:
         "trust_profile": trust_profile,
         "investigation_findings": investigation_findings,
         "explanation": explanation,
+        "blockchain_tx_hash": None,  # Not recorded on-chain until manually approved
     }
 
 

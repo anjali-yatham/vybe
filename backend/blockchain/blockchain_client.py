@@ -51,13 +51,39 @@ contract = w3.eth.contract(
 account = w3.eth.account.from_key(PRIVATE_KEY)
 
 
+def user_id_to_address(user_id: str) -> str:
+    """
+    Deterministically convert a user ID to an Ethereum address.
+    
+    This creates a consistent fake wallet address for simulated user IDs
+    (e.g., "U100477" -> "0x..."). The same user_id always maps to the same address.
+    
+    Args:
+        user_id: User identifier string (e.g., "U100477")
+        
+    Returns:
+        Checksummed Ethereum address (e.g., "0x1234...abcd")
+    """
+    # Hash the user_id using keccak256
+    hash_bytes = w3.keccak(text=user_id)
+    
+    # Take the last 20 bytes (160 bits) for the address
+    address_bytes = hash_bytes[-20:]
+    
+    # Convert to hex and add 0x prefix
+    address_hex = '0x' + address_bytes.hex()
+    
+    # Return checksummed address
+    return Web3.to_checksum_address(address_hex)
+
+
 def issue_ticket_onchain(ticket_id: str, owner_address: str) -> str:
     """
     Issue a ticket on the blockchain.
     
     Args:
         ticket_id: Unique identifier for the ticket
-        owner_address: Ethereum address of the ticket owner
+        owner_address: Ethereum address or user ID (e.g., "U100477") of the ticket owner
         
     Returns:
         Transaction hash as a hex string
@@ -65,6 +91,12 @@ def issue_ticket_onchain(ticket_id: str, owner_address: str) -> str:
     # Validate connection
     if not w3.is_connected():
         raise ConnectionError("Failed to connect to Polygon Amoy network")
+    
+    # Convert user_id to address if not already an Ethereum address
+    if not owner_address.startswith('0x'):
+        print(f"  → Converting user ID '{owner_address}' to Ethereum address...")
+        owner_address = user_id_to_address(owner_address)
+        print(f"  → Mapped to address: {owner_address}")
     
     # Ensure address is checksummed
     owner_address = Web3.to_checksum_address(owner_address)
@@ -147,14 +179,25 @@ if __name__ == "__main__":
     print(f"Network Connected: {w3.is_connected()}")
     print("=" * 60)
     
+    # Test user_id_to_address function
+    print("\n[TEST 0] Testing user_id_to_address conversion...")
+    test_user_ids = ["U100477", "U200123", "U300456"]
+    for user_id in test_user_ids:
+        address = user_id_to_address(user_id)
+        print(f"  {user_id} -> {address}")
+        # Verify consistency
+        address2 = user_id_to_address(user_id)
+        assert address == address2, "Address mapping should be deterministic!"
+    print("  ✓ User ID to address conversion is deterministic")
+    
     # Test parameters
     test_ticket_id = "TEST-001"
-    test_owner_address = account.address  # Using the account's own address
+    test_user_id = "U100477"  # Using a simulated user ID
     
     try:
-        # Test 1: Issue a ticket
-        print(f"\n[TEST 1] Issuing ticket '{test_ticket_id}' to {test_owner_address}")
-        tx_hash = issue_ticket_onchain(test_ticket_id, test_owner_address)
+        # Test 1: Issue a ticket using user_id (auto-conversion)
+        print(f"\n[TEST 1] Issuing ticket '{test_ticket_id}' to user '{test_user_id}'")
+        tx_hash = issue_ticket_onchain(test_ticket_id, test_user_id)
         print(f"✓ Transaction Hash: {tx_hash}")
         
         # Test 2: Get ticket owner
@@ -163,11 +206,14 @@ if __name__ == "__main__":
         print(f"✓ Owner: {owner_info['owner']}")
         print(f"✓ Valid: {owner_info['isValid']}")
         
-        # Verify the owner matches
-        if owner_info['owner'].lower() == test_owner_address.lower():
+        # Verify the owner matches the converted address
+        expected_address = user_id_to_address(test_user_id)
+        if owner_info['owner'].lower() == expected_address.lower():
             print(f"\n✓ SUCCESS: Ticket owner matches expected address!")
         else:
             print(f"\n✗ ERROR: Owner mismatch!")
+            print(f"  Expected: {expected_address}")
+            print(f"  Got: {owner_info['owner']}")
             
     except Exception as e:
         print(f"\n✗ Error during testing: {str(e)}")
