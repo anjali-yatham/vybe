@@ -1,0 +1,49 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_34-4c3b2105417a47482bc57fbb4cb73ebe9458a664",
+  "solcVersion": "0.8.34",
+  "solcLongVersion": "0.8.34+commit.80d5c536",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.16.0"
+  },
+  "userSourceNameMap": {
+    "contracts/TicketOwnership.sol": "project/contracts/TicketOwnership.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "osaka",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/TicketOwnership.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\n/**\n * @title TicketOwnership\n * @dev A simple smart contract for managing ticket ownership on blockchain\n * @notice This is a student project demo, not for production use\n */\ncontract TicketOwnership {\n    \n    // Struct to represent a ticket with its ownership information\n    struct Ticket {\n        string ticketId;      // Unique identifier for the ticket\n        address currentOwner; // Address of the current ticket owner\n        bool isValid;         // Whether the ticket is currently valid\n    }\n    \n    // Mapping from ticket ID to Ticket struct\n    mapping(string => Ticket) private tickets;\n    \n    // Event emitted when a ticket is transferred to a new owner\n    event TicketTransferred(\n        string indexed ticketId,\n        address indexed fromAddress,\n        address indexed toAddress\n    );\n    \n    /**\n     * @dev Issue a new ticket to an owner\n     * @param ticketId The unique identifier for the ticket\n     * @param owner The address of the initial ticket owner\n     */\n    function issueTicket(string memory ticketId, address owner) public {\n        // Create a new ticket with isValid = true\n        tickets[ticketId] = Ticket({\n            ticketId: ticketId,\n            currentOwner: owner,\n            isValid: true\n        });\n        \n        // Emit transfer event (from zero address to owner)\n        emit TicketTransferred(ticketId, address(0), owner);\n    }\n    \n    /**\n     * @dev Transfer a ticket to a new owner\n     * @param ticketId The unique identifier of the ticket to transfer\n     * @param newOwner The address of the new ticket owner\n     * @notice Only works if the ticket exists and isValid is true\n     */\n    function transferTicket(string memory ticketId, address newOwner) public {\n        Ticket storage ticket = tickets[ticketId];\n        \n        // Check that the ticket exists (has been issued)\n        require(ticket.currentOwner != address(0), \"Ticket does not exist\");\n        \n        // Check that the ticket is still valid\n        require(ticket.isValid, \"Ticket is not valid\");\n        \n        // Store the old owner for the event\n        address oldOwner = ticket.currentOwner;\n        \n        // Transfer ownership to the new owner\n        ticket.currentOwner = newOwner;\n        // Keep isValid = true after transfer\n        \n        // Emit transfer event\n        emit TicketTransferred(ticketId, oldOwner, newOwner);\n    }\n    \n    /**\n     * @dev Revoke a ticket, making it invalid\n     * @param ticketId The unique identifier of the ticket to revoke\n     * @notice Used when a ticket is resold, so the old record becomes invalid\n     */\n    function revokeTicket(string memory ticketId) public {\n        Ticket storage ticket = tickets[ticketId];\n        \n        // Check that the ticket exists\n        require(ticket.currentOwner != address(0), \"Ticket does not exist\");\n        \n        // Set isValid to false\n        ticket.isValid = false;\n    }\n    \n    /**\n     * @dev Get the current owner and validity status of a ticket\n     * @param ticketId The unique identifier of the ticket to query\n     * @return owner The address of the current ticket owner\n     * @return isValid Whether the ticket is currently valid\n     */\n    function getTicketOwner(string memory ticketId) public view returns (address owner, bool isValid) {\n        Ticket storage ticket = tickets[ticketId];\n        return (ticket.currentOwner, ticket.isValid);\n    }\n}\n"
+      }
+    }
+  }
+}
