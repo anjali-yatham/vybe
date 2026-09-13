@@ -1,1 +1,27 @@
 @import "tailwindcss";
+
+/* Animated gradient text effect for hero heading */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.gradient-text {
+  background: linear-gradient(
+    90deg,
+    #ff6b35,
+    #ff4081,
+    #9c27b0,
+    #f44336,
+    #ff6b35
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-shift 3s ease infinite;
+}
