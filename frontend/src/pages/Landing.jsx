@@ -2,10 +2,21 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useRef, useEffect } from 'react';
 import { Shield, RefreshCw, Link2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 function Landing() {
   const navigate = useNavigate();
   const videoRef = useRef(null);
+  const { isLoggedIn } = useAuth();
+
+  // Helper function for auth-gated navigation
+  const handleAuthenticatedAction = () => {
+    if (isLoggedIn) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login');
+    }
+  };
 
   // Force video to play when component mounts
   useEffect(() => {
@@ -59,7 +70,7 @@ function Landing() {
               Sign In
             </button>
             <button
-              onClick={() => navigate('/signup')}
+              onClick={handleAuthenticatedAction}
               className="bg-white text-black px-6 py-2 rounded-full font-medium hover:bg-gray-100 transition-colors"
             >
               Get Started
@@ -127,7 +138,7 @@ function Landing() {
             Concerts, sports, festivals, and more — all in one place.
           </p>
           <button
-            onClick={() => navigate('/events')}
+            onClick={handleAuthenticatedAction}
             className="bg-white text-black px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-100 transition-all hover:scale-105 inline-flex items-center gap-2"
           >
             Browse Events
@@ -230,7 +241,7 @@ function Landing() {
             Blockchain-recorded ownership means your ticket can never be secretly resold twice.
           </p>
           <button
-            onClick={() => navigate('/signup')}
+            onClick={handleAuthenticatedAction}
             className="bg-gradient-to-r from-[#FF8C42] to-[#FF6F91] text-white px-8 py-4 rounded-full font-semibold text-lg hover:opacity-90 transition-all hover:scale-105"
           >
             Get Started
@@ -257,7 +268,7 @@ function Landing() {
               </p>
             </div>
             <button
-              onClick={() => navigate('/sell')}
+              onClick={handleAuthenticatedAction}
               className="bg-white text-[#FF6F91] px-8 py-4 rounded-full font-semibold text-lg hover:bg-[#FFF8F0] transition-all hover:scale-105 whitespace-nowrap"
             >
               List a Ticket
