@@ -7,10 +7,13 @@ import { useAuth } from '../context/AuthContext';
 function Landing() {
   const navigate = useNavigate();
   const videoRef = useRef(null);
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, loading } = useAuth();
 
   // Helper function for auth-gated navigation
   const handleAuthenticatedAction = () => {
+    // Don't navigate while still checking auth state
+    if (loading) return;
+    
     if (isLoggedIn) {
       navigate('/dashboard');
     } else {
