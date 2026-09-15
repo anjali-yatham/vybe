@@ -1,9 +1,10 @@
-function UserDashboard() {
+export default function UserDashboard() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-4xl font-bold">User Dashboard</h1>
+    <div className="bg-white rounded-2xl shadow-sm p-8">
+      <h2 className="text-3xl font-bold text-[#3B2A24] mb-4">My Tickets</h2>
+      <p className="text-[#3B2A24]/60">
+        View and manage all your current tickets.
+      </p>
     </div>
-  )
+  );
 }
-
-export default UserDashboard
